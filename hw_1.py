@@ -8,7 +8,7 @@ IMAGES = ('JPEG', 'PNG', 'JPG', 'SVG')
 DOCUMENTS = ('DOC', 'DOCX', 'TXT', 'PDF', 'XLSX', 'PPTX') 
 VIDEOS = ('AVI', 'MP4', 'MOV', 'MKV') 
 SOUNDS = ('MP3', 'OGG', 'WAV', 'AMR') 
-ARCHIVES = ('ZIP', 'GZ', 'TAR') 
+ARCHIVES = ('ZIP', 'GZ', 'TAR', 'RAR') 
 
 #  Default Folder List
 FOLDERS = ('/images', '/videos','/documents','/archives','/sounds', '/others') 
