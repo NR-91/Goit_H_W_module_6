@@ -1,17 +1,15 @@
-import os,shutil
+import shutil
 import sys
 import re
-
-#  key = Default Folder : List = File Mask 
-
-FILE_MASK = {"/images":('JPEG', 'PNG', 'JPG', 'SVG') , 
-             "/documents":('DOC', 'DOCX', 'TXT', 'PDF', 'XLSX', 'PPTX') ,
-             "/videos":('AVI', 'MP4', 'MOV', 'MKV') , 
-             "/sounds":('MP3', 'OGG', 'WAV', 'AMR'), 
-             "/archives":('ZIP', 'GZ', 'TAR', 'RAR') , 
-             "/others":() }
+from pathlib import Path
 
 
+FILE_MASK = {"images":['*.jpeg', '*.png', '*.jpg', '*.svg'] , 
+             "documents":['*.doc', '*.docx', '*.txt', '*.pdf'] ,
+             "videos":['*.avi', '*.mp4', '*.mov', '*.mkv'] , 
+             "sounds":['*.mp3', '*.ogg', '*.wav', '*.amr'], 
+             "archives":['*.zip', '*.gz', '*.tar', '*.rar'] , 
+             "others":['*.*'] }
 
 # translation 
 CYRILLIC_SYMBOLS = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяєіїґ"
@@ -27,82 +25,58 @@ for c, l in zip(CYRILLIC_SYMBOLS, TRANSLATION):
 def translate(name):
     return name.translate(TRANS)
 
+
 # normalise name
 def normalise(name):
     rep = re.compile('[^a-zA-Zа-яА-я,\d]')
     name = rep.sub('_', name)
     return name
 
+def def_folder_list():
+    result = []
+    for d_f in FILE_MASK.keys():
+        result.append(d_f)
+    return result
+
 
 # Sort function    
-def sort_file(file_dir, file_mask, curr_path, dest_path):
-    
-    if len(file_mask) != 0:
-        f_m_c = True
-    else:
-        f_m_c = False
-        
-    new_fn = []
-    
-    for file in file_dir:
-        dest = ''
-        if f_m_c == True:
-            
-            for ex in file_mask:
-                if file.endswith(ex.casefold()):
-                    dest = curr_path + dest_path
-                    new_fn = str(file).split('.')
-                    
-                    if not os.path.exists(dest) :
-                        os.makedirs(dest) 
-                        
-                    os.rename(curr_path + '\\' + file,curr_path + '\\' + translate(normalise(new_fn[0]))+'.'+ex.lower()) 
-                    shutil.move(curr_path + '\\' + translate(normalise(new_fn[0]))+'.'+ex.lower() , dest)
-                    break
+def sort_file(p):
+    for x in p.iterdir():
+        if x.is_dir():
+            print(x)
+            if not x.name in def_folder_list():
+                if x.stat().st_size == 0:
+                    x.rmdir()
+                x.rename(p / normalise(translate(x.name)))
+                sort_file(Path.joinpath(p, x.name))
         else:
-            dest = curr_path + dest_path
-            if not os.path.exists(dest) :
-                os.makedirs(dest) 
-           
-            if os.path.isfile(curr_path + '\\' + file ):
-                shutil.move(curr_path + '\\' + file , dest) 
-                
+            
+            for k,v in FILE_MASK.items():
+                for ex in v:
+                    for x in p.glob(ex):
+                        
+                        files_dir =  p / k
+                        if not files_dir.exists():
+                            files_dir.mkdir()
+                            
+                        src_path = Path.joinpath(p, x.name)
+                        dst_path = Path.joinpath(files_dir, normalise(translate(x.stem)) + x.suffix)
+                        shutil.move(src_path, dst_path) 
+                        
+                        if k == 'archives':
+                            shutil.unpack_archive(dst_path, Path.joinpath(files_dir, normalise(translate(x.stem))))
+                          
 # main           
 def main():
     
-    files = ''
-    path_f = ''
-    
     try:
-        
-        path_f = sys.argv[1]
-        
-        if len(path_f) != 0:
-            
-            AppPath = sys.path[0]
-            current = AppPath + path_f
-            
-            files=os.listdir(current)
-            print(files)
-            
-            print("Sorting the files...")
-            
-            for k, v in FILE_MASK.items():
-                sort_file(files, v, current, k) 
-            
-            print("Sorting Completed...")
-            files=os.listdir(current)
-            
+        p = Path('.',sys.argv[1])
+        print("Sorting the files...")
+        sort_file(p)
+        print("Sorting Completed...")   
     except:
+        print('Path not found')
+        print('example: scrypt.py some_folder ')
         
-        print('Path not found : ', path_f)
-        print('example: scrypt.py /some_folder ')
-        
-    finally:
-        if len(path_f) != 0:
-            for i in os.listdir(current):
-                files_s = os.listdir(current + '/' + i)
-                print(i , ' -->', files_s)  
-		
 if __name__ == "__main__":
     main()
